@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Soulmask Crafting Desk</title>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e4ece7;--sf:#f6faf7;--ink:#13302a;--mut:#51675f;--ac:#0f6b5c;--on:#fff;--ac2:#9a5a14;--ln:#bfd0c6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1916;--sf:#15251f;--ink:#dcebe4;--mut:#93aca1;--ac:#5fc9b0;--on:#06231c;--ac2:#e0a95a;--ln:#27403a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1916;--sf:#15251f;--ink:#dcebe4;--mut:#93aca1;--ac:#5fc9b0;--on:#06231c;--ac2:#e0a95a;--ln:#27403a;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:20px 20px 8px;max-width:1200px;margin:auto}
+h1{font:700 28px/1.1 Bitter,Georgia,serif;margin:0 0 4px}
+.sub{color:var(--mut);margin:0}
+main{max-width:1200px;margin:auto;padding:8px 20px 40px;display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+input,button{font:inherit;color:inherit}
+#q{width:100%;padding:11px 14px;border:1.5px solid var(--ln);border-radius:10px;background:var(--sf)}
+#q:focus,button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.chip{border:1px solid var(--ln);background:transparent;border-radius:99px;padding:4px 12px;cursor:pointer}
+.chip.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--sf);border:1px solid var(--ln);border-left:4px solid var(--ac);border-radius:6px;padding:12px 14px}
+.card h3{font:700 16px/1.25 Bitter,Georgia,serif;margin:0}
+.cat{color:var(--ac2);font-size:12.5px}
+.ing{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+.ing button{border:1px solid var(--ln);background:var(--bg);border-radius:5px;padding:2px 8px;cursor:pointer;font-size:13.5px}
+.ing button:hover{border-color:var(--ac)}
+.row{display:flex;gap:8px;align-items:center}
+.row input{width:64px;padding:5px 8px;border:1px solid var(--ln);border-radius:6px;background:var(--bg)}
+.add{background:var(--ac);color:var(--on);border:0;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600}
+aside{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:14px;position:sticky;top:12px}
+aside h2{font:700 18px Bitter,Georgia,serif;margin:0 0 8px}
+.li{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dashed var(--ln)}
+.li button{border:0;background:none;cursor:pointer;color:var(--mut)}
+.tot{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin:8px 0}
+.tot b{font-variant-numeric:tabular-nums;text-align:right}
+.seg{display:flex;gap:6px;margin:8px 0}
+.seg .chip{flex:1}
+.mut{color:var(--mut);font-size:13px}
+#empty{padding:30px;text-align:center;color:var(--mut)}
+</style></head>
+<body>
+<header>
+<h1>Soulmask Crafting Desk</h1>
+<p class="sub">Search by item or ingredient, then build a materials list.</p>
+</header>
+<main>
+<section>
+<input id="q" type="search" placeholder="Search an item or ingredient, e.g. bronze ingot, clay, linen" aria-label="Search recipes">
+<div class="chips" id="chips"></div>
+<div class="mut" id="count"></div>
+<div class="grid" id="grid"></div>
+<div id="empty" hidden>No recipes match. Try a shorter word or another category.</div>
+</section>
+<aside>
+<h2>Materials list</h2>
+<div id="list"><p class="mut">Add recipes with the Add button to total what you need.</p></div>
+<div class="seg" id="seg" hidden>
+<button class="chip on" data-m="1">Raw materials</button>
+<button class="chip" data-m="0">Direct only</button>
+</div>
+<div class="tot" id="tot"></div>
+<button class="chip" id="clr" hidden>Clear list</button>
+<p class="mut" id="note" hidden>Totals assume each craft makes 1 item; stackable items like planks or rope may yield more in game.</p>
+</aside>
+</main>
+<script>
+const D=`Kiln
+Copper Ingot|Copper Ore*2
+Tin Ingot|Tin Ore*2
+Bronze Ingot|Copper Ingot*2,Tin Ingot*1
+Iron Ingot|Iron Ore*2,Carbon Powder*1
+Steel Ingot|Iron Ingot*1,Meteorite Ore*1,Coking Coal*1
+Gold Ingot|Gold Ore*2
+Silver Ingot|Silver Ore*2
+Charcoal|Branch*2
+Fire Ash|Thatch*1
+Lime|Stone*2
+Coking Coal|Coal Ore*2
+Torch|Fiber*5,Branch*1
+Metal Part|Iron Ingot*4,Copper Ingot*2
+Metal Plate|Iron Ingot*6,Bronze Ingot*3
+Plaster|Lime*4,Clay*2
+Glass|Crude Salt*2,Lime*2,Silica Sand*5
+Steel Chisel|Steel Ingot*5,Silica Sand*5
+Weaving
+Linen|Fiber*3
+Thick Rope|Vine*3
+Thin Rope|Fiber*4,Beast Fuzz*2
+Leather Rope|Rough Leather*2
+Yarn|Cotton*1,Fiber*1
+Gauze|Cotton*2,Fiber*2
+Fine Cloth|Yarn*5
+Refined Cloth|Yarn*5,Acidic Fluid*2
+Refined Rope|Yarn*4
+Simple Bandage|Linen*2
+Premium Bandage|Linen*2,Fire Ash*1,Aloe Juice*1
+Potting
+Ceramic Mold|Clay*10
+Bowl|Clay*15,Ceramic Mold*1
+Cup|Clay*12,Ceramic Mold*1
+Leatherworking
+Rough Leather|Beast Hide*1
+Tanning Fluid|Vine*2,Tree Bark*2
+Leather|Beast Hide*1,Tanning Fluid*1
+Thick Leather|Tanning Fluid*1,Thick Hide*1
+Premium Leather|Premium Beast Hide*1,Tanning Fluid*1,Lime*2
+Premium Thick Leather|Premium Thick Hide*1,Tanning Fluid*1,Lime*2
+Beast Bone|Common Carcass Chunk*1
+Beast Hide|Common Carcass Chunk*1
+Fresh Meat|Common Carcass Chunk*1
+Tools
+Stone Axe|Stone*3,Branch*1
+Stone Pickaxe|Stone*3,Branch*1
+Beast Bone Axe|Beast Bone*2,Wooden Handle*1
+Beast Bone Pickaxe|Beast Bone*2,Wooden Handle*1
+Bronze Axe|Bronze Ingot*5,Leather*2,Hardwood Handle*1
+Bronze Pickaxe|Bronze Ingot*5,Leather*2,Hardwood Handle*1
+Iron Axe|Iron Ingot*5,Premium Leather*2,Premium Hardwood Handle*1
+Iron Pickaxe|Iron Ingot*5,Premium Leather*2,Premium Hardwood Handle*1
+Steel Axe|Steel Ingot*5,Delicate Leather*2,Premium Hardwood Handle*1
+Steel Pickaxe|Steel Ingot*5,Delicate Leather*2,Premium Hardwood Handle*1
+Wooden Construction Hammer|Hardwood*4
+Bronze Construction Hammer|Hardwood Handle*2,Bronze Ingot*10
+Water Bottle|Beast Hide*2,Fiber*10,Thick Rope*2
+Weapons
+Wooden Bow|Branch*5,Thick Rope*2
+Wooden Arrow|Branch*5
+Wooden Spear|Log*5,Branch*2
+Wooden Shield|Log*10,Branch*10
+Stone Blade|Flint*6,Branch*1,Thick Rope*1
+Stone Spear|Flint*5,Thick Rope*2,Branch*1
+Stone Arrow|Flint*1,Branch*5
+Beast Bone Blade|Beast Bone*2,Thick Rope*2,Branch*1
+Beast Bone Bow|Beast Bone*3,Thick Rope*2,Branch*5
+Bronze Blade|Bronze Ingot*10,Leather*5,Hardwood Handle*1
+Bronze Spear|Bronze Ingot*10,Leather*5,Hardwood Handle*2
+Bronze Bow|Bronze Ingot*6,Leather Rope*5,Branch*5
+Bronze Shield|Bronze Ingot*12,Leather*5,Hardwood Handle*2
+Bronze Arrow|Bronze Ingot*1,Branch*5,Feather*1
+Iron Blade|Iron Ingot*10,Premium Leather*5,Premium Hardwood Handle*1
+Iron Great Sword|Iron Ingot*15,Premium Leather*5,Premium Hardwood Handle*1
+Iron Bow|Iron Ingot*6,Leather Rope*5,Branch*5
+Iron Shield|Iron Ingot*12,Premium Leather*5,Premium Hardwood Handle*2
+Iron Arrow|Iron Ingot*1,Branch*5,Premium Feather*1
+Steel Blade|Steel Ingot*10,Delicate Leather*5,Premium Hardwood Handle*1
+Steel Great Sword|Steel Ingot*15,Delicate Leather*5,Premium Hardwood Handle*1
+Steel Bow|Steel Ingot*6,Leather Rope*5,Branch*5
+Steel Shield|Steel Ingot*12,Delicate Leather*5,Premium Hardwood Handle*2
+Steel Arrow|Steel Ingot*1,Branch*5,Rare Feather*1
+Armor
+Linen Costume|Linen*10,Thick Rope*4
+Linen Pants|Linen*8,Thick Rope*4
+Linen Gloves|Linen*2,Thick Rope*2
+Linen Shoes|Linen*2,Thick Rope*2
+Beast Hide Costume|Beast Hide*2,Linen*10,Thick Rope*4
+Beast Hide Pants|Beast Hide*2,Linen*8,Thick Rope*4
+Beast Hide Gloves|Beast Hide*2,Linen*5,Thick Rope*2
+Beast Hide Shoes|Beast Hide*2,Linen*5,Thick Rope*2
+Bronze Chainmail|Bronze Ingot*1
+Iron Chainmail|Iron Ingot*1
+Steel Chainmail|Steel Ingot*1
+Copper Wire|Copper Ingot*2
+Iron Wire|Iron Ingot*2
+Steel Wire|Steel Ingot*2
+Donkey Saddle|Leather*15,Leather Rope*10,Linen*10
+Boar Saddle|Leather*16,Linen*10,Thick Rope*10
+Building
+Plank|Log*1
+Hardwood Plank|Hardwood*1
+Wooden Handle|Log*1,Branch*1
+Hardwood Handle|Hardwood*1,Branch*1
+Stone Brick|Stone*4
+Campfire|Fiber*5,Branch*5,Stone*5
+Bonfire|Branch*10,Stone*10,Log*20
+Cooking Stove|Branch*10,Stone*20,Ceramic Mold*2
+Carpenter’s Table|Log*20,Thick Rope*5
+Grinder|Stone*10,Plank*5
+Loom|Plank*10,Rough Leather*5,Thick Rope*5
+Potting Table|Clay*25,Stone*10,Plank*10
+Earth Kiln|Stone*100,Clay*50
+Furnace|Stone*100,Ceramic Mold*5,Clay*50
+Blast Furnace|Stone Brick*200,Ceramic Mold*10,Bronze Ingot*100
+Tanning Rack|Branch*20,Thick Rope*5
+Drying Rack|Plank*20,Branch*40,Resin*10
+Butcher’s Table|Branch*5,Stone*10,Log*10
+Weapon Crafting Bench|Plank*20,Wooden Handle*10,Leather Rope*5
+Armor Forging Table|Plank*20,Leather*10,Thin Rope*10
+Repair Bench|Plank*10,Wooden Handle*15,Leather Rope*5
+Small Wooden Chest|Plank*3,Branch*4,Thick Rope*2
+Wooden Chest|Plank*6,Leather*2,Thick Rope*4
+Bed|Plank*10,Thatch*20,Thick Rope*4
+Farmland|Clay*20,Stone*40
+Standing Torch|Thick Rope*2,Log*5
+Thatch Foundation|Thatch*15,Thick Rope*2
+Thatch Wall|Thatch*10,Thick Rope*2
+Thatch Roof|Thatch*10,Thick Rope*2
+Wooden Foundation|Plank*8,Branch*2
+Wooden Wall|Plank*5,Thick Rope*2
+Wooden Door|Plank*3,Thick Rope*2
+Stone Foundation|Stone Brick*8,Clay*5
+Stone Wall|Stone Brick*6,Hardwood Plank*4
+Cooking
+Cooked Meat|Fresh Meat*1
+Cooked Fish|Fish*1
+Roasted Corn|Corn*1
+Roasted Potato|Potato*1
+Roasted Pumpkin|Pumpkin*1
+Roasted Mushroom|Mushroom*1
+Boiled Egg|Egg*1
+Broth|Fresh Meat*2,Bowl*1
+Fish Soup|Fish*2,Bowl*1
+Mushroom Soup|Mushroom*2,Bowl*1
+Wheat Porridge|Wheat*4,Bowl*1
+Quinoa Porridge|Quinoa*4,Bowl*1
+Beer|Wheat*4,Yeast*2,Cup*1
+Mezcal|Agave Leaf*4,Yeast*2,Cup*1
+Yeast|Fiber*5,Wild Fruit*2
+Crude Salt|Salt Mine*1
+Refined Salt|Crude Salt*2,Lime*1
+Cooking Oil|Nut*5
+Chili Sauce|Chili*2,Crude Salt*1
+Salsa|Chili*1,Tomato*1
+Pancake|Flour*8
+Tortilla|Corn Flour*8
+Dumplings|Corn Flour*10,Fresh Meat*1,Crude Salt*1
+Honey|Fiber*2,Wild Fruit*5
+Sauced Meat|Chili Sauce*2,Crude Salt*4,Cooked Meat*1
+Premium Jerky|Crude Salt*4,Premium Fresh Meat*2
+Premium Steak|Premium Fresh Meat*2,Refined Salt*2,Cooking Oil*2
+Fried Rare Steak|Rare Fresh Meat*2,Cooking Oil*8,Refined Salt*5
+Pumpkin Salad|Pumpkin*2,Salsa*2,Chili*1
+Mixed Jam|Salsa*4,Papaya*2,Honey*4
+Hot Cocoa|Cocoa Powder*2,Chili*2,Cup*1
+Juice|Cup*1,Guava*2
+Ice|Niter Powder*5
+Cigar|Dried Tobacco*4,Fiber*5
+Dried Tobacco|Tobacco*1
+Alchemy
+Aloe Juice|Aloe Leaf*2
+Bone Powder|Beast Bone*1
+Carbon Powder|Charcoal*1
+Flour|Wheat*2
+Corn Flour|Corn*1
+Cocoa Powder|Cocoa Fruit*1
+Sulfur Powder|Sulfur Ore*1
+Niter Powder|Nitrate Ore*1
+Acidic Fluid|Sulfur Powder*5
+Explosive|Sulfur Powder*4,Niter Powder*10,Carbon Powder*6
+Gypsum|Stone*5,Acidic Fluid*2
+Silica Sand|Crystal*1
+Rubber|Serum*2,Acidic Fluid*1
+Mineral Oil|Coal Ore*5
+Venom|Poisonous Bug*2
+Aseptic|Resin*1,Venom*1
+Raw Lacquer|Resin*2,Serum*2
+Calaite|Stone*2,Copper Ore*1,Phosphate Ore*2
+Nitrate Ore|Feces*30,Fire Ash*10,Linen*5
+Essential Oil|Acidic Fluid*5,Herb*20
+Red Paint|Chili*2
+Yellow Paint|Clay*2
+Blue Paint|Copper Ore*1,Lime*2
+White Paint|Lime*2
+Black Paint|Carbon Powder*2
+Green Paint|Vine*5
+Gray Paint|Fire Ash*2
+Plant
+Compost|Fiber*10,Tree Bark*2
+Ash Fertilizer|Feces*2,Fire Ash*5
+Bone Powder Fertilizer|Feces*2,Bone Powder*5
+Corn Seed|Corn*1
+Chili Seed|Chili*1
+Tomato Seed|Tomato*1
+Pumpkin Seed|Pumpkin*1`;
+const R={},cats=[];let cat="All",list=[],raw=true,cc;
+D.split("\n").forEach(l=>{if(!l.includes("|")){cc=l;cats.push(l);return}
+const[n,i]=l.split("|");if(!R[n])R[n]={n,c:cc,i:i.split(",").map(s=>{const[a,b]=s.split("*");return[a,+b]})}});
+const all=Object.values(R),$=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function chips(){$("chips").innerHTML=["All",...cats].map(c=>`<button class="chip${c===cat?" on":""}" data-c="${c}">${c}</button>`).join("")}
+function draw(){const q=$("q").value.trim().toLowerCase();
+const f=all.filter(r=>(cat==="All"||r.c===cat)&&(!q||r.n.toLowerCase().includes(q)||r.i.some(x=>x[0].toLowerCase().includes(q))));
+$("count").textContent=f.length+" of "+all.length+" recipes";$("empty").hidden=f.length>0;
+$("grid").innerHTML=f.map(r=>`<div class="card" data-n="${esc(r.n)}"><h3>${esc(r.n)}</h3><div class="cat">${r.c}</div><div class="ing">${r.i.map(x=>`<button data-s="${esc(x[0])}" data-b="${x[1]}">${x[1]}× ${esc(x[0])}</button>`).join("")}</div><div class="row"><input type="number" min="1" value="1" aria-label="Quantity"><button class="add">Add to list</button></div></div>`).join("")}
+function ex(n,q,o,top){const r=R[n];if(r&&(raw||top))r.i.forEach(([a,b])=>ex(a,q*b,o,0));else o[n]=(o[n]||0)+q}
+function side(){const has=list.length>0;$("seg").hidden=$("clr").hidden=$("note").hidden=!has;
+$("list").innerHTML=has?list.map((x,k)=>`<div class="li"><span>${x.q}× ${esc(x.n)}</span><button data-x="${k}" aria-label="Remove ${esc(x.n)}">Remove</button></div>`).join(""):'<p class="mut">Add recipes with the Add button to total what you need.</p>';
+const o={};list.forEach(x=>ex(x.n,x.q,o,1));
+$("tot").innerHTML=Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([n,q])=>`<span>${esc(n)}</span><b>${q}</b>`).join("")}
+$("q").oninput=draw;
+$("chips").onclick=e=>{const c=e.target.dataset.c;if(c){cat=c;chips();draw()}};
+$("grid").onclick=e=>{const t=e.target,card=t.closest(".card");if(!card)return;
+if(t.dataset.s){$("q").value=t.dataset.s;cat="All";chips();draw();scrollTo({top:0,behavior:"smooth"})}
+else if(t.classList.contains("add")){const n=card.dataset.n,q=Math.max(1,+card.querySelector("input").value||1),h=list.find(x=>x.n===n);h?h.q+=q:list.push({n,q});side()}};
+$("grid").oninput=e=>{const card=e.target.closest(".card"),m=Math.max(1,+e.target.value||1);
+card.querySelectorAll(".ing button").forEach(b=>b.textContent=b.dataset.b*m+"× "+b.dataset.s)};
+$("list").onclick=e=>{if(e.target.dataset.x!==undefined){list.splice(+e.target.dataset.x,1);side()}};
+$("clr").onclick=()=>{list=[];side()};
+$("seg").onclick=e=>{if(e.target.dataset.m===undefined)return;raw=e.target.dataset.m==="1";
+$("seg").querySelectorAll(".chip").forEach(b=>b.classList.toggle("on",b===e.target));side()};
+chips();draw();side();
+</script>
+</body></html>
